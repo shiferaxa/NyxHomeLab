@@ -1,0 +1,7 @@
+---
+# TODO: install containerd and set SystemdCgroup = true
+# TODO: add the Kubernetes apt repo for {{ k8s_version }}
+# TODO: install kubelet, kubeadm, kubectl and hold the packages
+- name: Placeholder until the role is filled in
+  ansible.builtin.debug:
+    msg: "k8s_node role not implemented yet"

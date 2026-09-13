@@ -17,7 +17,7 @@ Paste one block at a time. apt-get install eats the rest of a pasted block from 
 
 ## 0. Preflight (both)
 
-Both nodes need a fixed IP. kubeadm bakes the control plane IP into certificates and the kubelet config, so give both boxes a DHCP reservation on the router or a static netplan entry before you start. Done Sep 13 2026 in the eero app (Settings > Network settings > Reservations & port forwarding): athena 10:62:e5:18:f0:34 -> 192.168.5.167, aries fc:3f:db:0c:37:74 -> 192.168.5.166.
+Both nodes need a fixed IP. kubeadm bakes the control plane IP into certificates and the kubelet config, so give both boxes a DHCP reservation on the router or a static netplan entry before you start. Done Sep 13 2026 in the eero app (Settings > Network settings > Reservations & port forwarding), one entry per node pairing its eno1 MAC (`ip link show eno1 | grep ether`) with the IP in the table above.
 
 ```bash
 lsb_release -a                       # Ubuntu 26.04.1 on both
@@ -130,7 +130,7 @@ sudo kubeadm init \
   --apiserver-cert-extra-sans=athena
 ```
 
-Tailscale is not installed on the fresh boxes. If it is added later, regenerate the API server cert with the Tailscale name and IP: delete /etc/kubernetes/pki/apiserver.crt and apiserver.key, run `kubeadm init phase certs apiserver --apiserver-cert-extra-sans=athena,athena.rohu-atria.ts.net,<TS_IP>`, then restart the kube-apiserver pod.
+Tailscale is not installed on the fresh boxes. If it is added later, regenerate the API server cert with the Tailscale name and IP: delete /etc/kubernetes/pki/apiserver.crt and apiserver.key, run `kubeadm init phase certs apiserver --apiserver-cert-extra-sans=athena,<TAILSCALE_HOSTNAME>,<TAILSCALE_IP>`, then restart the kube-apiserver pod.
 
 Save the `kubeadm join ...` line it prints. Then set up kubectl for your user:
 

@@ -1,35 +1,16 @@
-# Terraform
-**/.terraform/
-*.tfstate
-*.tfstate.*
-crash.log
-crash.*.log
-.terraform.tfstate.lock.info
-*.tfplan
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.terraformrc
-terraform.rc
-
-# Secrets (terraform.tfvars is tracked on purpose and holds no secrets)
-secrets.tfvars
-*.auto.tfvars
+# Secrets and credentials
 *.pem
 *.key
 id_ed25519*
 id_rsa*
 .env
-
-# Ansible
-ansible/inventory/hosts.yml
-ansible/*.retry
-ansible/.vault_pass
+*.age
+sops.yaml.local
 
 # Kubernetes
 kubeconfig
 *.kubeconfig
+admin.conf
 
 # Editors / OS
 .vscode/

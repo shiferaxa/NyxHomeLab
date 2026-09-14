@@ -9,7 +9,7 @@ Roles:
 | athena | control plane | 192.168.5.167  | 16 GB RAM, control plane is light |
 | aries  | worker        | 192.168.5.166  | 32 GB RAM, runs the workloads |
 
-Version pinned: Kubernetes 1.36 (supported until June 2027). CNI: Flannel with pod CIDR 10.244.0.0/16.
+Version pinned: Kubernetes 1.36 (supported until June 2027). CNI: Cilium 1.20 with pod CIDR 10.244.0.0/16 (the cluster was first built with Flannel and swapped the same day, see step 7).
 
 Both boxes run Ubuntu 26.04.1 LTS (resolute) with containerd 2.2 from the Ubuntu repo. Neither has Tailscale installed on the fresh install, so the Tailscale SAN in step 6 is skipped until that changes. LAN is 192.168.4.0/22.
 
@@ -110,13 +110,13 @@ The kubelet will crash loop until kubeadm init or join gives it a config. That i
 sudo ufw status
 ```
 
-If it says inactive, skip this. Otherwise on athena open 6443/tcp (API), 2379:2380/tcp (etcd), 10250/tcp (kubelet), 10257/tcp and 10259/tcp (controller manager, scheduler). On aries open 10250/tcp and 30000:32767/tcp (NodePorts). On both open 8472/udp (Flannel VXLAN).
+If it says inactive, skip this. Otherwise on athena open 6443/tcp (API), 2379:2380/tcp (etcd), 10250/tcp (kubelet), 10257/tcp and 10259/tcp (controller manager, scheduler). On aries open 10250/tcp and 30000:32767/tcp (NodePorts). On both open 8472/udp (Cilium VXLAN) and 4240/tcp (Cilium health checks).
 
 ## 6. Init the control plane (athena only)
 
 Why each flag:
 
-- pod-network-cidr must match what Flannel expects (10.244.0.0/16 is its default).
+- pod-network-cidr is the range kubeadm slices into a per-node podCIDR. Cilium in kubernetes IPAM mode uses those slices.
 - apiserver-advertise-address pins the API server to the LAN NIC. Without it kubeadm may pick tailscale0.
 - control-plane-endpoint is what the join command and kubeconfigs point at. Setting it now, even to the same IP, means you can swap in a DNS name or VIP later without re-issuing certs.
 - apiserver-cert-extra-sans adds extra names to the API server cert. Only the hostname for now, Tailscale name and IP later if Tailscale gets installed.
@@ -141,15 +141,47 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl get nodes                    # athena shows NotReady until the CNI is up
 ```
 
-## 7. Flannel CNI (athena only)
+## 7. Cilium CNI (from the laptop, kubectl already pointed at the cluster)
+
+Kubernetes ships no pod network. Until a CNI is installed every node stays NotReady. Cilium uses eBPF in the kernel instead of iptables and can later replace kube-proxy and add Hubble flow visibility.
+
+Install the cilium CLI once (WSL):
 
 ```bash
-kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-kubectl -n kube-flannel get pods -w   # wait for Running
-kubectl get nodes                     # athena should go Ready
+curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/v0.20.0/cilium-linux-amd64.tar.gz
+sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+rm cilium-linux-amd64.tar.gz
+cilium version --client
 ```
 
-If Flannel picks tailscale0 instead of the LAN NIC (pods on the two nodes cannot reach each other), edit the DaemonSet and add `--iface=<LAN NIC name>` to the kube-flannel container args.
+Install Cilium. ipam.mode=kubernetes makes it use the per-node podCIDR kubeadm already assigned instead of Cilium's own default pool.
+
+```bash
+cilium install --version 1.20.1 --set ipam.mode=kubernetes
+cilium status --wait
+kubectl get nodes                     # both nodes go Ready
+```
+
+Restart anything that was created before Cilium was up so it gets a Cilium-managed address, then check nothing is unmanaged:
+
+```bash
+kubectl -n kube-system rollout restart deployment coredns
+cilium status                         # Cluster Pods line should read n/n managed
+```
+
+Optional full test, takes several minutes and creates its own namespace:
+
+```bash
+cilium connectivity test
+```
+
+### Swapping CNI on a running cluster
+
+Done Sep 13 2026 from Flannel to Cilium. You run exactly one CNI, so it is a remove and reinstall, and pods lose networking in between.
+
+1. Laptop: `kubectl delete -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
+2. Both nodes: `sudo rm -f /etc/cni/net.d/10-flannel.conflist` then `sudo reboot`. The reboot clears the vxlan interface, the cni0 bridge, and Flannel's iptables rules.
+3. Laptop: the Cilium install block above, then the CoreDNS restart.
 
 ## 8. Join the worker (aries only)
 
@@ -167,7 +199,7 @@ kubectl get pods -A
 kubectl label node aries node-role.kubernetes.io/worker=
 ```
 
-Both nodes Ready and every pod in kube-system and kube-flannel Running means the cluster is up.
+Both nodes Ready and every pod in kube-system Running means the cluster is up.
 
 With only two machines you may want workloads on athena too. The control plane taint blocks that by default:
 

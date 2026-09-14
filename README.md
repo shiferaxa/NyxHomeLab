@@ -9,7 +9,7 @@ Home lab Kubernetes cluster built with kubeadm on two bare metal Ubuntu Server b
 | athena | control plane | 192.168.5.167 | 16 GB RAM, also schedules pods     |
 | aries  | worker        | 192.168.5.166 | 32 GB RAM, carries most workloads  |
 
-Both run Ubuntu 26.04 LTS, Kubernetes 1.36 (packages held), containerd 2.2 from the Ubuntu repo, and Flannel with pod CIDR 10.244.0.0/16. IPs are DHCP reservations on the router.
+Both run Ubuntu 26.04 LTS, Kubernetes 1.36 (packages held), containerd 2.2 from the Ubuntu repo, and Cilium 1.20 as the CNI with pod CIDR 10.244.0.0/16. IPs are DHCP reservations on the router.
 
 ## Layout
 
@@ -31,6 +31,7 @@ After step 3 everything under kubernetes/ is reconciled by Flux. Commit a change
 ## Status
 
 - [x] kubeadm cluster on bare metal (Sep 2026)
+- [x] Cilium CNI, replaced the initial Flannel install (Sep 2026)
 - [ ] Flux bootstrap
 - [ ] MetalLB, ingress-nginx, cert-manager
 - [ ] Monitoring (kube-prometheus-stack)

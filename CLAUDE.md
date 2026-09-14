@@ -11,7 +11,7 @@ Home lab Kubernetes cluster. Two Ubuntu 26.04 Server boxes on the LAN, athena (1
 
 ## Architecture
 
-Bare metal, no hypervisor. Kubernetes 1.36 (apt packages held), containerd 2.2, Flannel with pod CIDR 10.244.0.0/16. Control plane endpoint 192.168.5.167:6443. athena is untainted so it schedules pods too. See docs/architecture.md.
+Bare metal, no hypervisor. Kubernetes 1.36 (apt packages held), containerd 2.2, Cilium 1.20 (ipam.mode=kubernetes, kube-proxy kept) with pod CIDR 10.244.0.0/16. Control plane endpoint 192.168.5.167:6443. athena is untainted so it schedules pods too. See docs/architecture.md.
 
 - docs/kubeadm-baremetal.md: the build runbook, step by step, both nodes
 - docs/architecture.md: components, network, open decisions
@@ -37,7 +37,7 @@ GITHUB_TOKEN=... ./scripts/bootstrap-flux.sh
 
 ## Current state
 
-- Sep 13 2026: cluster built and smoke tested (cross node pod to service via CoreDNS). IPs reserved on the eero (app only, no web UI). Proxmox and Terraform design removed from the repo.
+- Sep 13 2026: cluster built and smoke tested (cross node pod to service via CoreDNS). Same evening swapped Flannel for Cilium 1.20.1 (delete Flannel, reboot both nodes, cilium install). cilium connectivity test: 82 passed, 55 skipped for features not enabled. IPs reserved on the eero (app only, no web UI). Proxmox and Terraform design removed from the repo.
 - Flux is NOT bootstrapped yet. Nothing under kubernetes/ is applied to the cluster.
-- Not done: Flux bootstrap, Tailscale on the nodes, MetalLB, ingress, cert-manager, monitoring.
+- Not done: Flux bootstrap, Tailscale on the nodes, MetalLB, ingress, cert-manager, monitoring, Cilium kube-proxy replacement, Hubble.
 - Next step: run scripts/bootstrap-flux.sh, then uncomment metallb in kubernetes/infrastructure/controllers/kustomization.yaml and add the manifests.

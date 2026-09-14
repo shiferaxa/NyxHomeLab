@@ -32,7 +32,7 @@ After step 3 everything under kubernetes/ is reconciled by Flux. Commit a change
 
 - [x] kubeadm cluster on bare metal (Sep 2026)
 - [x] Cilium CNI, replaced the initial Flannel install (Sep 2026)
-- [ ] Flux bootstrap
+- [x] Flux bootstrap (Sep 2026, Flux 2.9.5)
 - [ ] MetalLB, ingress-nginx, cert-manager
 - [ ] Monitoring (kube-prometheus-stack)
 - [ ] Tailscale on both nodes

@@ -38,6 +38,6 @@ GITHUB_TOKEN=... ./scripts/bootstrap-flux.sh
 ## Current state
 
 - Sep 13 2026: cluster built and smoke tested (cross node pod to service via CoreDNS). Same evening swapped Flannel for Cilium 1.20.1 (delete Flannel, reboot both nodes, cilium install). cilium connectivity test: 82 passed, 55 skipped for features not enabled. IPs reserved on the eero (app only, no web UI). Proxmox and Terraform design removed from the repo.
-- Flux is NOT bootstrapped yet. Nothing under kubernetes/ is applied to the cluster.
-- Not done: Flux bootstrap, Tailscale on the nodes, MetalLB, ingress, cert-manager, monitoring, Cilium kube-proxy replacement, Hubble.
-- Next step: run scripts/bootstrap-flux.sh, then uncomment metallb in kubernetes/infrastructure/controllers/kustomization.yaml and add the manifests.
+- Sep 13 2026: Flux 2.9.5 bootstrapped with scripts/bootstrap-flux.sh (fine-grained PAT scoped to this repo, revoked after). Flux commits to main itself, so git pull before pushing. All four Kustomizations Ready; infra-configs and apps are empty and reconcile as no-ops.
+- Not done: Tailscale on the nodes, MetalLB, ingress, cert-manager, monitoring, Cilium kube-proxy replacement, Hubble.
+- Next step: uncomment metallb in kubernetes/infrastructure/controllers/kustomization.yaml and add the manifests.
